@@ -1,41 +1,36 @@
-this.SetAccountOnCustomerChange = function (executionContext) {
-
+this.SetContactOnCustomerChange = async function (executionContext) {
     //Get form context
     var formContext = executionContext.getFormContext();
 
     //Get customerField type
     var customerField = formContext.getAttribute("customerid");    
 
-    if (customerField && customerField.getValue() !== null) {
-        
+    //check to ensure data in field
+    if (customerField && customerField.getValue() !== null) {        
         //get the lookup value
         var customer = customerField.getValue()[0];
 
         //checking entity type
-
         if (customer.entityType === "account") {
-
             // Retrieve the primary contact from the account and set it
-            getContactFromAccount(customer.id).then(function (primaryContact) {
-                if (primaryContact) {
+            try {
+                const primaryContact = await getContactFromAccount(customer.id);
+                if (primaryContact) {                    
                     setContact(formContext, primaryContact);
                 }
-            }).catch(function (error) {
-                formContext.ui.setFormNotification("Error retrieving primary contact: " + error.message, "ERROR", "ERPCMessage");
-            });
-            
-        } else if (customer.entityType === "contact") {
-            setContact(formContext, customer);
-            
-        } 
-        
-    }
-    
+            } catch (error) {
+                formContext.ui.setFormNotification(
+                    "Error retrieving primary contact: " + error.message,
+                    "ERROR",
+                    "ERPCMessage"
+                );
+            }            
+        }         
+    }    
 }
 
-//This method to set the contact field to the correct contact
-this.setContact = function (formContext, contactToSet) {
-    console.log("v1.1 Setting Contact:", contactToSet);
+//This method sets the contact field to the primary contact of the account if available
+this.setContact = function (formContext, contactToSet) {    
     var contactField = formContext.getAttribute("primarycontactid");
 
     if (contactField.getValue() === null) {
@@ -45,31 +40,36 @@ this.setContact = function (formContext, contactToSet) {
                 name: contactToSet.name,
                 entityType: "contact",
             },
-        ]);
-        console.log("Contact Field Updated Successfully");
-    } else {
-        console.log("Contact Field Already Has a Value");
-    }
-
+        ]);        
+        contactField.fireOnChange();
+    } 
 }
 
 //this methods retrieves the primary contact of an account
-this.getContactFromAccount = function (accountId) {
+this.getContactFromAccount = async function (accountId) {
     return new Promise(function (resolve, reject) {
-        Xrm.WebApi.retrieveRecord("account", accountId, "?$select=primarycontactid").then(
+        // console.log("getting details for " + accountId);
+        Xrm.WebApi.retrieveRecord(
+            "account",
+            accountId,
+            "?$select=primarycontactid&$expand=primarycontactid($select=fullname)"
+        ).then(
             function success(result) {
-                if (result.primarycontactid) {
+                if (result.primarycontactid) {                    
                     resolve({
-                        id: result.primarycontactid.id,
-                        name: result.primarycontactid.name,
+                        id: result.primarycontactid.contactid,
+                        name: result.primarycontactid.fullname,
                     });
-                } else {
+                } else {                    
                     resolve(null); // No primary contact associated
                 }
             },
             function error(error) {
+                console.log("Error occurred" + error);
                 reject(error);
             }
         );
     });
 };
+
+

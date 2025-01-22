@@ -1,6 +1,6 @@
 this.OnContactChange = function (executionContext) {
     var formContext = executionContext.getFormContext();
-    formContext.ui.setFormNotification("v8.3", "INFO", "IDUnique220912");
+    
 
     //getting the quickview
     var quickViewControl = formContext.ui.quickForms.get("primaryContactQuickView");
