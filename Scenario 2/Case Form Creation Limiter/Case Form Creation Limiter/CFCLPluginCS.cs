@@ -19,12 +19,9 @@ namespace Case_Form_Creation_Limiter
         public void Execute(IServiceProvider serviceProvider)
         {
 
-            //Assign datastructures to variable names
-            var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
-            var tracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
-
-
             // Obtain the organization service
+            var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
+            var tracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));            
             var serviceFactory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
             var service = serviceFactory.CreateOrganizationService(context.UserId);
 

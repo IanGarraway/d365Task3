@@ -1,3 +1,6 @@
+//This method to be called when the Customer field is changed
+//It controls retrieving the contact data for the accounts
+//Primary contact and then set's the contact field to that value.
 this.SetContactOnCustomerChange = async function (executionContext) {
     //Get form context
     var formContext = executionContext.getFormContext();
@@ -33,7 +36,7 @@ this.SetContactOnCustomerChange = async function (executionContext) {
 this.setContact = function (formContext, contactToSet) {    
     var contactField = formContext.getAttribute("primarycontactid");
 
-    if (contactField.getValue() === null) {
+    if (contactField.getValue() === null) {//check to ensure that the field is blank, to stop existing data being overridden. 
         contactField.setValue([
             {
                 id: contactToSet.id,
@@ -41,30 +44,30 @@ this.setContact = function (formContext, contactToSet) {
                 entityType: "contact",
             },
         ]);        
-        contactField.fireOnChange();
+        contactField.fireOnChange(); //Triggers the contacts event to ensure the fields display correctly
     } 
 }
 
 //this methods retrieves the primary contact of an account
 this.getContactFromAccount = async function (accountId) {
     return new Promise(function (resolve, reject) {
-        // console.log("getting details for " + accountId);
+        // This line uses the XRM toolset to query the account table for the primary contact
         Xrm.WebApi.retrieveRecord(
             "account",
             accountId,
             "?$select=primarycontactid&$expand=primarycontactid($select=fullname)"
         ).then(
-            function success(result) {
+            function success(result) { //if it was sucessful in retrieving the contact it then stores and returns them in an object 
                 if (result.primarycontactid) {                    
                     resolve({
                         id: result.primarycontactid.contactid,
                         name: result.primarycontactid.fullname,
                     });
                 } else {                    
-                    resolve(null); // No primary contact associated
+                    resolve(null); // No primary contact associated and so returns a null object
                 }
             },
-            function error(error) {
+            function error(error) { //Error handling
                 console.log("Error occurred" + error);
                 reject(error);
             }
