@@ -41,7 +41,7 @@ this.modifyQuickView = function (quickViewControl) {
 }
 
 //This method checks to see if the components value is null and if it is sets it to not visible
-//or if the value is not null sets the componet to visible.
+//or if the value is not null sets the component to visible.
 this.hideIfNull = function (value, control ) {    
     if (value === null) {
         control.setVisible(false);        
