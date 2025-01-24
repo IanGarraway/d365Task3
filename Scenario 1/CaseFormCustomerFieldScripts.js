@@ -67,12 +67,9 @@ this.getContactFromAccount = async function (accountId) {
                     resolve(null); // No primary contact associated and so returns a null object
                 }
             },
-            function error(error) { //Error handling
-                console.log("Error occurred" + error);
+            function error(error) { //Error handling                
                 reject(error);
             }
         );
     });
 };
-
-
