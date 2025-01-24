@@ -9,17 +9,14 @@ using System.Threading.Tasks;
 
 namespace Case_Form_Creation_Limiter
 {
-    public class CaseFormCreationLimiter : IPlugin    {
-        
-
+    public class CaseCreationLimiter : IPlugin {
         /// <summary>
         /// This plugin will stop the creation of new cases where the account already has at least one open case
         /// </summary>
         /// <param name="serviceProvider"></param>
         public void Execute(IServiceProvider serviceProvider)
         {
-
-            // Obtain the organization service
+            // Obtain the organization service from the provider
             var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
             var tracingService = (ITracingService)serviceProvider.GetService(typeof(ITracingService));            
             var serviceFactory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
@@ -27,52 +24,45 @@ namespace Case_Form_Creation_Limiter
 
             try
             {
-                //Check the program is able to access the forms data
+                //Verify access to form data
                 if (!(context.InputParameters.Contains("Target") && context.InputParameters["Target"] is Entity targetEntity))
                 {
                     throw new InvalidPluginExecutionException("Error accessing the form");
                 }
-                //Check to ensure the customerid is available
+                //Ensure customer ID is available
                 if (!targetEntity.Contains("customerid"))
                 {
                     throw new InvalidPluginExecutionException("Customer data not available");
                 }
 
                 EntityReference accountReference = (EntityReference)targetEntity["customerid"];
-                tracingService.Trace($"Checking for open cases for Account id: {accountReference.Id}"); //First trace message
+                tracingService.Trace($"Checking for open cases for Account id: {accountReference.Id}"); //Start of Tracing
 
-                EntityCollection cases = GetCases(service, QueryBuilder(accountReference));
+                EntityCollection openCases = RetrieveOpenCases(service, QueryBuilder(accountReference));
 
-                if(cases.Entities.Count > 0)
+                if(openCases.Entities.Count > 0)
                 {                    
 
-                    if (cases[0].Attributes.Contains("title"))
+                    if (openCases[0].Attributes.Contains("title"))
                     {                        
-                        string caseTitle = cases.Entities[0].Attributes["title"].ToString();                        
+                        string caseTitle = openCases.Entities[0].Attributes["title"].ToString();                        
                         
                         throw new InvalidPluginExecutionException($"An open case ('{caseTitle}') already exists for the selected account");
                     }
                     throw new InvalidPluginExecutionException($"An open case already exists for the selected account");
                 }
-
                 tracingService.Trace("New Case creation allowed.");
-
-
-
             }
-            catch (InvalidPluginExecutionException ex) //catch any InvalidPluginExecutionExceptions, produce a trace message and rethrow the exception
+            catch (InvalidPluginExecutionException ex) 
             {
                 tracingService.Trace("Unable to create the new case: "+ex.Message);
                 throw;
-
             }
-            catch(Exception ex) //catch any unexpected errors and throws an invalidPluginExecutionException 
+            catch(Exception ex) 
             {
                 tracingService.Trace("An unexpected error has caused creation of this case to terminate");
                 tracingService.Trace(ex.ToString());
                 throw new InvalidPluginExecutionException("An unexpected error occurred in the plugin. Please contact support.", ex);
-
-
             }
         }
 
@@ -97,11 +87,10 @@ namespace Case_Form_Creation_Limiter
         }
 
         //takes the query built by the QueryBuilder method and uses it to retrieve the relevant cases
-        private EntityCollection GetCases(IOrganizationService service, QueryExpression query)
+        private EntityCollection RetrieveOpenCases(IOrganizationService service, QueryExpression query)
         {
-            EntityCollection cases = service.RetrieveMultiple(query);
-            return cases;
-
+            EntityCollection openCases = service.RetrieveMultiple(query);
+            return openCases;
         }
     }
 }
